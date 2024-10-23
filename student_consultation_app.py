@@ -35,7 +35,7 @@ consultation_keywords = [
 
 def generate_all_ai_content(task_description, start_date, end_date, title, student_name):
     system_prompt = f"""
-    根据以下论文任务书描述，为16次学生论文咨询生成内容。每次咨询包括学生信息和教师信息，每条信息不超过50字，不要有称呼。
+    根据以下论文任务书描述，为16次学生论文咨询生成内容。每次咨询包括学生信息和教师信息，每条信息50-100字，不要有称呼。
     确保生成的内容与论文任务书相关，并按照论文写作的进度逐步推进。
     同时，请根据给定的开始日期和结束日期，为每次咨询生成一个合适的日期。
 
