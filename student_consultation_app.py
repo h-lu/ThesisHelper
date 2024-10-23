@@ -248,7 +248,7 @@ def main():
     student_id = st.text_input("学生学号")
     teacher_name = st.text_input("指导教师")
     major = st.text_input("专业")
-    college = st.text_input("学院", value="经济与管理���院")
+    college = st.text_input("学院", value="经济与管理学院")
 
     col1, col2 = st.columns(2)
     with col1:
