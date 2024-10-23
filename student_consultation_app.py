@@ -35,9 +35,13 @@ consultation_keywords = [
 
 def generate_all_ai_content(task_description, start_date, end_date, title, student_name):
     system_prompt = f"""
-    根据以下论文任务书描述，为16次学生论文咨询生成内容。每次咨询包括学生信息和教师信息，每条信息不少于30字且不超过100字，不要有称呼。
-    要求每条信息具体详实，包含实质性的内容，避免空泛的表述。
-    确保生成的内容与论文任务书相关，并按照论文写作的进度逐步推进。
+    根据以下论文任务书描述，为16次学生论文咨询生成内容。每次咨询包括学生信息和教师信息，要求：
+    1. 每条信息50-100字
+    2. 每条信息包含2-3个完整的句子
+    3. 内容具体详实，避免空泛表述
+    4. 不要有称呼语
+    5. 按照论文写作的进度逐步推进
+    6. 体现每次咨询的实质性进展
 
     论文题目：{title}
     论文任务书描述：
@@ -50,21 +54,21 @@ def generate_all_ai_content(task_description, start_date, end_date, title, stude
     输出格式为JSON，包含以下字段：
     1. consultations: 16个对象的数组，每个对象有date, student_info和teacher_info三个字段。
     2. work_summary: 不超过200字的毕业论文工作总结。这份总结应该是指导教师对学生 {student_name} 的工作评价。
-    3. mid_term_review: 不超过100字的中期检查评价，包括指导老师对学生前期工作的评价和对后阶段的要求。简洁扼要。
+    3. mid_term_review: 不超过100字的中期检查评价，包括指导老师对学生前期工作的评价和对后阶段的要求。
 
     示例输出格式：
     {{
         "consultations": [
             {{
                 "date": "2024-03-01",
-                "student_info": "完成了初步的文献调研，阅读了30余篇相关论文，整理出三个主要研究方向：深度学习在图像识别中的应用、模型优化方法、以及性能评估指标。希望得到老师对研究方向的指导。",
-                "teacher_info": "建议聚焦于深度学习在特定场景下的图像识别应用，可以选择医疗影像或工业检测等具体领域。同时要注意总结现有方法的优缺点，为创新点的提出做准备。"
+                "student_info": "完成了20篇核心期刊论文的阅读和整理，发现目前深度学习在图像识别领域主要存在模型复杂度高和泛化能力不足两个问题。根据文献分析，初步提出了一个基于轻量级网络的改进方案。",
+                "teacher_info": "建议进一步细化改进方案中的创新点，可以从模型结构优化和损失函数设计两个方向深入。同时要注意收集足够的实验数据，为后续的对比实验做好准备。"
             }},
             // ... 其他14次咨询 ...
             {{
                 "date": "2024-06-15",
-                "student_info": "完成了所有实验的数据分析和论文的最终修改，对比实验表明新方法在准确率和效率上都有显著提升。已经按照规范要求检查了论文格式，准备好答辩材料。",
-                "teacher_info": "论文整体结构完整，实验设计合理，数据分析充分。建议在答辩时重点强调方法创新点和实验结果的可靠性，准备好应对评委可能提出的问题。"
+                "student_info": "完成了所有实验数据的分析和论文的最终修改，实验结果显示改进后的模型在准确率和计算效率上都有15%以上的提升。已经按照格式要求完成了论文的排版和参考文献的核对。",
+                "teacher_info": "论文的整体质量较好，实验设计严谨，数据分析充分，结论可靠。建议在答辩时重点展示改进方法的创新性和实验结果的显著性，并准备一些技术细节的补充说明。"
             }}
         ],
         "work_summary": "该生在毕业论文研究过程中表现出色。论文选题具有实际意义，研究方法科学规范。通过大量的文献阅读和实验，提出了创新性的解决方案。工作态度认真，善于思考，能够独立解决问题。论文质量较高，具有一定的学术价值和应用前景。",
@@ -244,7 +248,7 @@ def main():
     student_id = st.text_input("学生学号")
     teacher_name = st.text_input("指导教师")
     major = st.text_input("专业")
-    college = st.text_input("学院", value="经济与管理学院")
+    college = st.text_input("学院", value="经济与管理���院")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -256,6 +260,7 @@ def main():
 
     student_signature_file = st.file_uploader("上传学生签名图片", type=["png", "jpg", "jpeg"])
     teacher_signature_file = st.file_uploader("上传教师签名图片", type=["png", "jpg", "jpeg"])
+    dean_signature_file = st.file_uploader("上传系主任签名图片", type=["png", "jpg", "jpeg"])
 
     # 创建选项卡，"任务书"在前
     tab1, tab2 = st.tabs(["任务书", "记录本"])
@@ -317,6 +322,7 @@ def main():
                     
                     # 在这里创建 InlineImage 对象
                     teacher_signature = InlineImage(task_doc, teacher_signature_file, width=Mm(20))
+                    dean_signature = InlineImage(task_doc, dean_signature_file, width=Mm(20))
                     
                     # 准备渲染上下文
                     task_context = {
@@ -325,6 +331,7 @@ def main():
                         'student_id': student_id,
                         'teacher_name': teacher_name,
                         'teacher_signature': teacher_signature,
+                        'dean_signature': dean_signature,
                         'major': major,
                         'college': college,
                         'start_date': start_date.strftime("%Y-%m-%d"),

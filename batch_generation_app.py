@@ -57,7 +57,7 @@ def process_excel_file(excel_file):
         st.error(f"处理CSV文件时出错：{str(e)}")
         return None
 
-def generate_documents_for_student(row, teacher_signature_file, signatures_dir):
+def generate_documents_for_student(row, teacher_signature_file, dean_signature_file, signatures_dir):
     """为单个学生生成文档"""
     try:
         # 转换日期格式
@@ -110,6 +110,7 @@ def generate_documents_for_student(row, teacher_signature_file, signatures_dir):
         task_doc = DocxTemplate("thesis_task_description_template.docx")
         teacher_signature = InlineImage(task_doc, teacher_signature_file, width=Mm(20))
         student_signature = InlineImage(task_doc, student_signature_path, width=Mm(20))
+        dean_signature = InlineImage(task_doc, dean_signature_file, width=Mm(20))
         
         task_context = {
             'title': row["论文题目"],
@@ -118,6 +119,7 @@ def generate_documents_for_student(row, teacher_signature_file, signatures_dir):
             'teacher_name': row["指导教师"],
             'teacher_signature': teacher_signature,
             'student_signature': student_signature,
+            'dean_signature': dean_signature,
             'major': row["专业"],
             'college': row["学院"],
             'start_date': start_date.strftime("%Y-%m-%d"),
@@ -141,6 +143,7 @@ def generate_documents_for_student(row, teacher_signature_file, signatures_dir):
             'teacher_name': row["指导教师"],
             'teacher_signature': teacher_signature,
             'student_signature': student_signature,
+            'dean_signature': dean_signature,
             'major': row["专业"],
             'college': row["学院"],
             'start_date': start_date.strftime("%Y-%m-%d"),
@@ -196,8 +199,8 @@ def main():
         ### 使用步骤
         
         1. 上传CSV文件
-        2. 上传教师签名图片
-        3. 上传包含所有学生签名的ZIP文件
+        2. 上传教师签��图片
+        3. 上传包含所有学生签名ZIP文件
         4. 点击"开始批量生成文档"
         5. 等待处理完成后下载生成的ZIP文件
         
@@ -221,11 +224,14 @@ def main():
     
     # 上传教师签名
     teacher_signature_file = st.file_uploader("上传教师签名图片", type=["png", "jpg", "jpeg"])
+
+    # 上传系主任签名
+    dean_signature_file = st.file_uploader("上传系主任签名图片", type=["png", "jpg", "jpeg"])
     
     # 上传学生签名ZIP文件
     signatures_zip = st.file_uploader("上传学生签名ZIP文件（签名图片文件名需与学生姓名一致）", type="zip")
     
-    if excel_file and teacher_signature_file and signatures_zip:
+    if excel_file and teacher_signature_file and dean_signature_file and signatures_zip:  # 添加dean_signature_file检查
         # 解压签名文件到临时目录
         signatures_dir = extract_signatures(signatures_zip)
         # st.write(f"临时目录路径: {signatures_dir}")
@@ -264,7 +270,8 @@ def main():
                         with st.spinner(f"正在处理 {row['学生姓名']} 的文档..."):
                             task_doc, record_doc = generate_documents_for_student(
                                 row, 
-                                teacher_signature_file, 
+                                teacher_signature_file,
+                                dean_signature_file,  # 添加系主任签名参数
                                 signatures_dir
                             )
                             
