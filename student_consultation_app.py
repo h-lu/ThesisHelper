@@ -25,7 +25,7 @@ consultation_keywords = [
     {"student": "章节撰写", "teacher": "内容审阅"},
     {"student": "统计分析", "teacher": "结果讨论"},
     {"student": "图表制作", "teacher": "可视化建议"},
-    {"student": "讨论部分", "teacher": "深度分���"},
+    {"student": "讨论部分", "teacher": "深度分析"},
     {"student": "结论总结", "teacher": "贡献点确认"},
     {"student": "摘要撰写", "teacher": "关键词确定"},
     {"student": "参考文献", "teacher": "格式检查"},
@@ -88,7 +88,7 @@ def generate_all_ai_content(task_description, start_date, end_date, title, stude
        - 前期工作的具体评价
        - 已取得的阶段性成果
        - 存在的问题和不足
-       - 后期工作的具体要求和建议
+       - 后工作的具体要求和建议
 
     示例输出格式：
     {{
@@ -213,14 +213,14 @@ def generate_task_description(title, major, start_date, end_date, additional_inf
        - 说明研究的理论和实践意义
        - 阐述研究的可行性分析
 
-    2. 原始条件及要求：
+    2. 原始条件及数据：
        - 说明完成论文所需的基础知识和技能要求
        - 列出必要的软硬件环境和工具
        - 明确数据来源和获取方式
-       - 提出质量标准和验收要求
-       - 规定论文格式和规范要求
-       - 遵守学校的论文写作规范
-       - 合学术道德和学术规范
+       - 说明数据的类型和规模
+       - 规定数据的质量要求
+       - 说明数据的预处理方法
+       - 规定数据的存储和管理方式
 
     3. 设计的技术要求（论文的研究要求）：
        - 详细说明研究方法和技术路线
@@ -328,10 +328,11 @@ def generate_task_description(title, major, start_date, end_date, additional_inf
         "original_conditions": [
             "1. 基础知识要求：...(列出必备知识)",
             "2. 环境和工具要求：...(说明所需环境)",
-            "3. 数据要求：...(明确数据来源)",
-            "4. 质量标准：...(规定质量要求)",
-            "5. 规范要求：...(说明需遵循的规范)",
-            "6. 学术规范：...(强调学术道德)"
+            "3. 数据来源：...(明确数据来源)",
+            "4. 数据类型：...(说明数据类型)",
+            "5. 数据规模：...(规定数据规模)",
+            "6. 数据质量：...(说明质量要求)",
+            "7. 数据管理：...(规定管理方式)"
         ],
         "technical_requirements": [
             "1. 研究方法：...(详述研究方法)",
@@ -435,9 +436,9 @@ def main():
 
     mid_date = start_date + (end_date - start_date) / 2
 
-    student_signature_file = st.file_uploader("上传学生签名图片", type=["png", "jpg", "jpeg"])
-    teacher_signature_file = st.file_uploader("上传教师签名图片", type=["png", "jpg", "jpeg"])
-    dean_signature_file = st.file_uploader("上传系主任签名图片", type=["png", "jpg", "jpeg"])
+    student_signature_file = st.file_uploader("上传学生签名图片（可选）", type=["png", "jpg", "jpeg"])
+    teacher_signature_file = st.file_uploader("上传教师签名图片（必需）", type=["png", "jpg", "jpeg"])
+    dean_signature_file = st.file_uploader("上传系主任签名图片（必需）", type=["png", "jpg", "jpeg"])
 
     # 创建选项卡，"任务书"在前
     tab1, tab2 = st.tabs(["任务书", "记录本"])
@@ -466,7 +467,7 @@ def main():
         # 显示生成的内容并允许编辑
         for i, (key, part_name) in enumerate([
             ("task_content", "课题的任务内容"),
-            ("original_conditions", "原始条件及要求"),
+            ("original_conditions", "原始条件及数据"),
             ("technical_requirements", "设计的技术要求"),
             ("specific_work", "应完成的具体工作"),
             ("reference_requirements", "资料文献要求")
@@ -487,6 +488,8 @@ def main():
         if st.button("生成任务书文档"):
             if not teacher_signature_file:
                 st.warning("请上传教师的签名图片。")
+            elif not dean_signature_file:
+                st.warning("请上传系主任的签名图片。")
             elif not all([title, student_name, student_id, teacher_name, major, college]):
                 st.warning("请填写所有基本信息。")
             elif not all(st.session_state.task_parts.values()):
@@ -515,6 +518,10 @@ def main():
                         **st.session_state.task_parts  # 使用 session_state 中的 task_parts
                     }
                     
+                    # 如果有学生签名，添加到上下文中
+                    if student_signature_file:
+                        task_context['student_signature'] = InlineImage(task_doc, student_signature_file, width=Mm(20))
+                    
                     # 渲染模板
                     task_doc.render(task_context)
                     
@@ -538,7 +545,7 @@ def main():
         # 加载模板
         doc = DocxTemplate("student_consultation_template.docx")
 
-        if student_signature_file and teacher_signature_file and st.session_state.task_parts:
+        if teacher_signature_file and st.session_state.task_parts:
             # 使用任务书内容生成咨询记录
             task_description = "\n".join(["\n".join(st.session_state.task_parts[key]) for key in st.session_state.task_parts])
             
@@ -547,7 +554,6 @@ def main():
 
             if st.button("生成咨询记录"):
                 # 加载签名图片
-                student_signature = InlineImage(doc, student_signature_file, width=Mm(20))
                 teacher_signature = InlineImage(doc, teacher_signature_file, width=Mm(20))
 
                 # 渲染模板
@@ -562,12 +568,16 @@ def main():
                     'major': major,
                     'college': college,
                     'consultations': consultations,
-                    'student_signature': student_signature,
                     'teacher_signature': teacher_signature,
                     'work_summary': work_summary,
                     'mid_term_review': mid_term_review,
                     'pagebreak': RichText('\f')
                 }
+
+                # 如果有学生签名，添加到上下文中
+                if student_signature_file:
+                    context['student_signature'] = InlineImage(doc, student_signature_file, width=Mm(20))
+
                 doc.render(context)
 
                 # 保存生成的文档到内存中
@@ -582,7 +592,10 @@ def main():
 
                 st.success(f"{student_name}的学生咨询记录已生成!")
         else:
-            st.warning("请先生成任务书内容，并上传签名图片。")
+            if not teacher_signature_file:
+                st.warning("请上传教师签名图片。")
+            if not st.session_state.task_parts:
+                st.warning("请先生成任务书内容。")
 
 if __name__ == "__main__":
     main()
