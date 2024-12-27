@@ -43,46 +43,51 @@ def process_excel_file(excel_file):
         df = pd.read_csv(excel_file)
         required_columns = [
             "论文题目", "学生姓名", "学生学号", "指导教师", 
-            "专业", "学院", "开始日期", "结束日期"
+            "专业", "学院", "开始日期", "结束日期", "补充信息"
         ]
         
         # 检查必要的列是否存在
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
-            st.error(f"CSV文件缺少以下列：{', '.join(missing_columns)}")
-            return None
+            if "补充信息" in missing_columns:
+                # 如果缺少补充信息列，添加一个空的补充信息列
+                df["补充信息"] = ""
+                missing_columns.remove("补充信息")
+            if missing_columns:  # 如果还有其他缺失列
+                st.error(f"CSV文件缺少以下列：{', '.join(missing_columns)}")
+                return None
             
         return df
     except Exception as e:
         st.error(f"处理CSV文件时出错：{str(e)}")
         return None
 
-def generate_documents_for_student(row, teacher_signature_file, dean_signature_file, signatures_dir):
+def generate_documents_for_student(row, teacher_signature_file, dean_signature_file, signatures_dir=None):
     """为单个学生生成文档"""
     try:
         # 转换日期格式
         start_date = pd.to_datetime(row["开始日期"]).date()
         end_date = pd.to_datetime(row["结束日期"]).date()
         
-        # 获取学生签名图片路径（使用学生姓名作为文件名）
-        # 尝试多个可能的扩展名
+        # 获取学生签名图片路径（如果有）
         student_signature_path = None
-        for ext in ['.jpg', '.jpeg', '.png']:
-            path = os.path.join(signatures_dir, f"{row['学生姓名']}{ext}")
-            if os.path.exists(path):
-                student_signature_path = path
-                break
-                
-        if not student_signature_path:
-            st.error(f"找不到学生 {row['学生姓名']} 的签名图片")
-            return None, None
+        if signatures_dir:
+            for ext in ['.jpg', '.jpeg', '.png']:
+                path = os.path.join(signatures_dir, f"{row['学生姓名']}{ext}")
+                if os.path.exists(path):
+                    student_signature_path = path
+                    break
+        
+        # 获取补充信息，如果不存在则使用空字符串
+        additional_info = row.get("补充信息", "")
         
         # 生成任务书内容
         task_content = generate_task_description(
             row["论文题目"], 
             row["专业"], 
             start_date, 
-            end_date
+            end_date,
+            additional_info
         )
         
         if not task_content:
@@ -103,13 +108,13 @@ def generate_documents_for_student(row, teacher_signature_file, dean_signature_f
             start_date,
             end_date,
             row["论文题目"],
-            row["学生姓名"]
+            row["学生姓名"],
+            additional_info
         )
         
         # 生成任务书文档
         task_doc = DocxTemplate("thesis_task_description_template.docx")
         teacher_signature = InlineImage(task_doc, teacher_signature_file, width=Mm(20))
-        student_signature = InlineImage(task_doc, student_signature_path, width=Mm(20))
         dean_signature = InlineImage(task_doc, dean_signature_file, width=Mm(20))
         
         task_context = {
@@ -118,23 +123,37 @@ def generate_documents_for_student(row, teacher_signature_file, dean_signature_f
             'student_id': row["学生学号"],
             'teacher_name': row["指导教师"],
             'teacher_signature': teacher_signature,
-            'student_signature': student_signature,
             'dean_signature': dean_signature,
             'major': row["专业"],
             'college': row["学院"],
             'start_date': start_date.strftime("%Y-%m-%d"),
             'end_date': end_date.strftime("%Y-%m-%d"),
-            **formatted_task_content  # 使用格式化后的内容
+            **formatted_task_content
         }
+        
+        # 如果有学生签名，添加到上下文中
+        if student_signature_path:
+            task_context['student_signature'] = InlineImage(task_doc, student_signature_path, width=Mm(20))
         
         task_doc.render(task_context)
         
         # 生成记录本文档
         record_doc = DocxTemplate("student_consultation_template.docx")
         teacher_signature = InlineImage(record_doc, teacher_signature_file, width=Mm(20))
-        student_signature = InlineImage(record_doc, student_signature_path, width=Mm(20))
         
         mid_date = start_date + (end_date - start_date) / 2
+        
+        # 准备咨询记录数据
+        consultations = []
+        for i, consultation in enumerate(ai_content['consultations']):
+            consultation_data = {
+                'id': i + 1,
+                'time': consultation['date'],
+                'location': '办公',
+                'student_info': consultation['student_info'],
+                'teacher_info': consultation['teacher_info']
+            }
+            consultations.append(consultation_data)
         
         record_context = {
             'title': row["论文题目"],
@@ -142,18 +161,20 @@ def generate_documents_for_student(row, teacher_signature_file, dean_signature_f
             'student_id': row["学生学号"],
             'teacher_name': row["指导教师"],
             'teacher_signature': teacher_signature,
-            'student_signature': student_signature,
-            'dean_signature': dean_signature,
             'major': row["专业"],
             'college': row["学院"],
             'start_date': start_date.strftime("%Y-%m-%d"),
             'mid_date': mid_date.strftime("%Y-%m-%d"),
             'end_date': end_date.strftime("%Y-%m-%d"),
-            'consultations': ai_content['consultations'],
+            'consultations': consultations,
             'work_summary': ai_content['work_summary'],
             'mid_term_review': ai_content['mid_term_review'],
             'pagebreak': RichText('\f')
         }
+        
+        # 如果有学生签名，添加到上下文中
+        if student_signature_path:
+            record_context['student_signature'] = InlineImage(record_doc, student_signature_path, width=Mm(20))
         
         record_doc.render(record_context)
         
@@ -189,8 +210,9 @@ def main():
            - 日期格式为：YYYY-MM-DD（如：2024-03-01）
         
         2. **准备签名图片**
-           - 教师签名：单个图片文件（支持jpg、jpeg、png格式）
-           - 学生签名：
+           - 教师签名：单个图片文件（必需，支持jpg、jpeg、png格式）
+           - 系主任签名：单个图片文件（必需，支持jpg、jpeg、png格式）
+           - 学生签名（可选）：
              * 每个学生一个签名图片文件
              * 文件名必须与CSV中的"学生姓名"完全一致（如：张三.jpg）
              * 支持jpg、jpeg、png格式
@@ -199,16 +221,17 @@ def main():
         ### 使用步骤
         
         1. 上传CSV文件
-        2. 上传教师签字图片
-        3. 上传包含所有学生签名ZIP文件
-        4. 点击"开始批量生成文档"
-        5. 等待处理完成后下载生成的ZIP文件
+        2. 上传教师签字图片（必需）
+        3. 上传系主任签字图片（必需）
+        4. 上传包含所有学生签名ZIP文件（可选）
+        5. 点击"开始批量生成文档"
+        6. 等待处理完成后下载生成的ZIP文件
         
         ### 注意事项
         
         - 签名图片建议使用白色背景
         - 签名图片大小建议不超过1MB
-        - ZIP文件中不要包含文件夹，直接放签名图片
+        - 如果上传学生签名ZIP文件，不要包含文件夹，直接放签名图片
         - 确保所有文件名中不包含特殊字符
         - 生成的文档将按"学生姓名 - 任务书.docx"和"学生姓名 - 记录本.docx"的格式命名
         
@@ -219,47 +242,23 @@ def main():
         2. 每个学生的记录本（包含16次咨询记录、中期检查评价和工作总结）
         """)
     
-    # 传CSV文件
+    # 上传文件
     excel_file = st.file_uploader("上传学生信息CSV文件", type=["csv"])
+    teacher_signature_file = st.file_uploader("上传教师签名图片（必需）", type=["png", "jpg", "jpeg"])
+    dean_signature_file = st.file_uploader("上传系主任签名图片（必需）", type=["png", "jpg", "jpeg"])
+    signatures_zip = st.file_uploader("上传学生签名ZIP文件（可选）", type="zip")
     
-    # 上传教师签名
-    teacher_signature_file = st.file_uploader("上传教师签名图片", type=["png", "jpg", "jpeg"])
-
-    # 上传系主任签名
-    dean_signature_file = st.file_uploader("上传系主任签名图片", type=["png", "jpg", "jpeg"])
-    
-    # 上传学生签名ZIP文件
-    signatures_zip = st.file_uploader("上传学生签名ZIP文件（签名图片文件名需与学生姓名一致）", type="zip")
-    
-    if excel_file and teacher_signature_file and dean_signature_file and signatures_zip:  # 添加dean_signature_file检查
-        # 解压签名文件到临时目录
-        signatures_dir = extract_signatures(signatures_zip)
-        # st.write(f"临时目录路径: {signatures_dir}")
+    if excel_file and teacher_signature_file and dean_signature_file:
+        # 解压签名文件到临时目录（如果有）
+        signatures_dir = None
+        if signatures_zip:
+            signatures_dir = extract_signatures(signatures_zip)
             
         df = process_excel_file(excel_file)
         
         if df is not None:
             st.write("已读取的学生信息：")
             st.dataframe(df)
-            
-            # 验证所有学生的签名图片是否存在
-            missing_signatures = []
-            for _, row in df.iterrows():
-                # 检查是否存在任一格式的签名文件
-                found = False
-                for ext in ['.jpg', '.jpeg', '.png']:
-                    file_path = os.path.join(signatures_dir, f"{row['学生姓名']}{ext}")
-                    # st.write(f"检查文件: {file_path}")
-                    if os.path.exists(file_path):
-                        found = True
-                        # st.write(f"找到签名文件: {file_path}")
-                        break
-                if not found:
-                    missing_signatures.append(row['学生姓名'])
-            
-            if missing_signatures:
-                st.error(f"以下学生的签名图片未找到：{', '.join(missing_signatures)}")
-                return
             
             if st.button("开始批量生成文档"):
                 # 创建ZIP文件
@@ -271,7 +270,7 @@ def main():
                             task_doc, record_doc = generate_documents_for_student(
                                 row, 
                                 teacher_signature_file,
-                                dean_signature_file,  # 添加系主任签名参数
+                                dean_signature_file,
                                 signatures_dir
                             )
                             
@@ -301,8 +300,9 @@ def main():
                 st.success("所有文档已生成完成！")
                 
                 # 清理临时目录
-                import shutil
-                shutil.rmtree(signatures_dir)
+                if signatures_dir:
+                    import shutil
+                    shutil.rmtree(signatures_dir)
 
 if __name__ == "__main__":
     main()

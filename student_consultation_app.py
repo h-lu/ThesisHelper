@@ -25,7 +25,7 @@ consultation_keywords = [
     {"student": "章节撰写", "teacher": "内容审阅"},
     {"student": "统计分析", "teacher": "结果讨论"},
     {"student": "图表制作", "teacher": "可视化建议"},
-    {"student": "讨论部分", "teacher": "深度分析"},
+    {"student": "讨论部分", "teacher": "深度分���"},
     {"student": "结论总结", "teacher": "贡献点确认"},
     {"student": "摘要撰写", "teacher": "关键词确定"},
     {"student": "参考文献", "teacher": "格式检查"},
@@ -33,52 +33,80 @@ consultation_keywords = [
     {"student": "答辩准备", "teacher": "预答辩指导"}
 ]
 
-def generate_all_ai_content(task_description, start_date, end_date, title, student_name):
+def generate_all_ai_content(task_description, start_date, end_date, title, student_name, additional_info=""):
     system_prompt = f"""
-    根据以下论文任务书描述，为16次学生论文咨询生成内容。每次咨询包括学生信息和教师信息，要求：
-    1. 每条信息50-100字
-    2. 每条信息包含2-3个完整的句子
-    3. 内容具体详实，避免空泛表述
-    4. 不要有称呼语
-    5. 按照论文写作的进度逐步推进
-    6. 体现每次咨询的实质性进展
+    根据以下论文任务书描述和补充信息，为16次学生论文咨询生成内容。每次咨询包括学生信息和教师信息，具体要求如下：
 
+    基本要求：
+    1. 每条信息100-200字，确保内容充实且有实质性指导价值
+    2. 每条信息包含3-4个完整的句子
+    3. 内容具体详实，避免空泛表述，需包含具体的研究细节、方法和建议
+    4. 不要有称呼语，直接描述内容
+    5. 按照论文写作的进度逐步推进，体现研究的连续性和深入性
+    6. 每次咨询都要体现实质性进展，不能简单重复
+
+    内容要求：
+    1. 学生信息应包含：
+       - 当前工作的具体进展
+       - 遇到的具体问题或困难
+       - 已经采取的解决方案
+       - 下一步的工作计划
+
+    2. 教师信息应包含：
+       - 对学生工作的具体评价
+       - 针对性的改进建议
+       - 明确的指导方向
+       - 具体的技术或方法建议
+
+    3. 进度安排：
+       - 前5次咨询：选题定位、文献研究、方法设计阶段
+       - 中5次咨询：实验/调研实施、数据收集分析阶段
+       - 后6次咨询：论文撰写、修改完善阶段
+
+    论文信息：
     论文题目：{title}
-    论文任务书描述：
-    {task_description}
+    论文任务书描述：{task_description}
+    补充信息：{additional_info}
 
-    咨询时间范围：
+    时间安排：
     开始日期：{start_date.strftime('%Y-%m-%d')}
     结束日期：{end_date.strftime('%Y-%m-%d')}
 
     输出格式为JSON，包含以下字段：
-    1. consultations: 16个对象的数组，每个对象有date, student_info和teacher_info三个字段。
-    2. work_summary: 不超过200字的毕业论文工作总结。这份总结应该是指导教师对学生 {student_name} 的工作评价。
-    3. mid_term_review: 不超过100字的中期检查评价，包括指导老师对学生前期工作的评价和对后阶段的要求。
+    1. consultations: 16个对象的数组，每个对象包含：
+       - date: 咨询日期
+       - student_info: 学生工作汇报（100-200字）
+       - teacher_info: 教师指导建议（100-200字）
+
+    2. work_summary: 200-300字的毕业论文工作总结，包含：
+       - 总结学生的工作态度和表现
+       - 评价研究工作的创新性和价值
+       - 对论文质量的整体评价
+       - 对学生的期望和建议
+
+    3. mid_term_review: 150-200字的中期检查评价，包含：
+       - 前期工作的具体评价
+       - 已取得的阶段性成果
+       - 存在的问题和不足
+       - 后期工作的具体要求和建议
 
     示例输出格式：
     {{
         "consultations": [
             {{
                 "date": "2024-03-01",
-                "student_info": "完成了20篇核心期刊论文的阅读和整理，发现目前深度学习在图像识别领域主要存在模型复杂度高和泛化能力不足两个问题。根据文献分析，初步提出了一个基于轻量级网络的改进方案。",
-                "teacher_info": "建议进一步细化改进方案中的创新点，可以从模型结构优化和损失函数设计两个方向深入。同时要注意收集足够的实验数据，为后续的对比实验做好准备。"
-            }},
-            // ... 其他14次咨询 ...
-            {{
-                "date": "2024-06-15",
-                "student_info": "完成了所有实验数据的分析和论文的最终修改，实验结果显示改进后的模型在准确率和计算效率上都有15%以上的提升。已经按照格式要求完成了论文的排版和参考文献的核对。",
-                "teacher_info": "论文的整体质量较好，实验设计严谨，数据分析充分，结论可靠。建议在答辩时重点展示改进方法的创新性和实验结果的显著性，并准备一些技术细节的补充说明。"
+                "student_info": "完成了20篇核心期刊论文的系统阅读和分析，重点关注了深度学习在图像识别领域的最新进展。通过文献梳理，发现目前主要存在模型复杂度高和泛化能力不足两个问题。基于文献分析结果，初步构思了一个基于轻量级网络的改进方案，并完成了技术路线的初步设计。准备开始进行算法的详细设计和实验环境的搭建。",
+                "teacher_info": "文献综述工作比较系统，问题定位准确。建议进一步细化改进方案中的创新点，可以从模型结构优化和损失函数设计两个方向深入。同时要注意收集足够的实验数据，建议准备至少三个公开数据集进行验证。需要设计详细的对比实验方案，确保研究结果的可靠性和说服力。"
             }}
         ],
-        "work_summary": "该生在毕业论文研究过程中表现出色。论文选题具有实际意义，研究方法科学规范。通过大量的文献阅读和实验，提出了创新性的解决方案。工作态度认真，善于思考，能够独立解决问题。论文质量较高，具有一定的学术价值和应用前景。",
-        "mid_term_review": "前期工作扎实，文献综述全面，研究方案设计合理。建议在后期工作中加强实验数据的分析深度，突出研究的创新点，注意论文结构的逻辑性和完整性。"
+        "work_summary": "该生在毕业论文研究过程中表现出色，工作态度认真负责，科研能力突出。论文选题紧跟学科前沿，具有重要的理论意义和应用价值。在研究过程中，通过大量的文献阅读和实验探索，提出了具有创新性的解决方案。实验设计严谨，数据分析深入，研究结果可靠。特别值得肯定的是，该生善于思考，能够独立解决问题，具备良好的科研素养。论文质量较高，创新点明确，实验验证充分，具有较好的学术价值和应用前景。",
+        "mid_term_review": "前期工作扎实，文献综述全面且深入，研究方案设计合理可行。已完成关键算法的设计和初步实验，取得了积极的阶段性成果。存在的问题是实验验证还需要进一步深入，数据分析有待加强。建议在后期工作中重点加强实验数据的分析深度，进一步突出研究的创新点，同时注意论文结构的逻辑性和完整性。要按计划推进实验工作，确保留出充足的论文修改时间。"
     }}
     """
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "请根据论文任务书和时间范围生成16次论文咨询的内容，包括日期、学生信息和教师信息，以及工作总结和中期检查评价。"}
+        {"role": "user", "content": "请根据给定的论文题目和专业生成一个JSON格式的任务书描述。"}
     ]
 
     response = client.chat.completions.create(
@@ -91,7 +119,7 @@ def generate_all_ai_content(task_description, start_date, end_date, title, stude
 
     return json.loads(response.choices[0].message.content)
 
-def generate_consultations(task_description, start_date, end_date, title, student_name):
+def generate_consultations(task_description, start_date, end_date, title, student_name, additional_info=""):
     consultations = []
 
     if 'ai_content' not in st.session_state:
@@ -99,7 +127,7 @@ def generate_consultations(task_description, start_date, end_date, title, studen
 
     if st.button("使用AI生成所有咨询内容、工作总结和中期检查评价"):
         with st.spinner('正在生成内容...'):
-            st.session_state.ai_content = generate_all_ai_content(task_description, start_date, end_date, title, student_name)
+            st.session_state.ai_content = generate_all_ai_content(task_description, start_date, end_date, title, student_name, additional_info)
         st.success("所有内容已生成!")
 
     # 验证AI生成的内容
@@ -133,7 +161,7 @@ def generate_consultations(task_description, start_date, end_date, title, studen
             default_teacher_info = ""
         
         time = st.text_input(f"时间", value=default_date, key=f"time_{i}")
-        location = st.text_input(f"地点", value="办公室", key=f"location_{i}")
+        location = st.text_input(f"地点", value="办公", key=f"location_{i}")
         
         student_input = st.text_area(f"学生信息 (关键词: {consultation_keywords[i]['student']})", 
                                      value=default_student_info,
@@ -167,66 +195,208 @@ def generate_consultations(task_description, start_date, end_date, title, studen
     
     return consultations, work_summary, mid_term_review
 
-def generate_task_description(title, major, start_date, end_date):
+def generate_task_description(title, major, start_date, end_date, additional_info=""):
     total_weeks = ((end_date - start_date).days + 1) // 7
     system_prompt = f"""
-    请根据给定的论文题目、专业和时间范围，生成一份详细的毕业论文任务书描述。描述应包括以下6个部分：
-    1. 课题的任务内容
-    2. 原始条件及要求
-    3. 设计的技术要求（论文的研究要求）
-    4. 毕业设计（论文）应完成的具体工作
-    5. 资料文献要求及主要的参考文献
-    6. 进度安排（分为4-6个主要阶段，每个阶段说明主要任务和时间安排）
+    请根据给定的论文题目、专业、时间范围和补充信息，生成一份详细的毕业论文任务书描述。描述应包括以下5个部分，并以JSON格式输出：
 
     论文题目：{title}
     专业：{major}
-    总周数：{total_weeks}周
+    补充信息：{additional_info}
 
-    请确保生成的内容专业、详细且与题目和专业相关。每个部分的内容应该简明扼要，总字数控制在1000字左右。
-    请以JSON格式输出，每个部分作为一个单独的字段。对于每个字段，如果内容包含多个要点，请使用数组格式，每个要点作为数组的一个元素。
+    1. 课题的任务内容：
+       - 须融入论文选题内容，不少于100字
+       - 阐述选题的研究背景和现实意义
+       - 明确研究目标和预期成果
+       - 说明研究的创新点和应用价值
+       - 指出研究的重点和难点
+       - 说明研究的理论和实践意义
+       - 阐述研究的可行性分析
 
-    特别注意：
-    - 进度安排应该分为4-6个主要阶段，每个阶段说明主要任务和周数范围。
-    - 进度安排应该考虑给定的总周数，确保整个计划在这个时间范围内完成。
-    - 使用"x-y周"的格式来表示每个阶段的时间范围，例如"1-3周"。
+    2. 原始条件及要求：
+       - 说明完成论文所需的基础知识和技能要求
+       - 列出必要的软硬件环境和工具
+       - 明确数据来源和获取方式
+       - 提出质量标准和验收要求
+       - 规定论文格式和规范要求
+       - 遵守学校的论文写作规范
+       - 合学术道德和学术规范
 
-    示例输出格式：
+    3. 设计的技术要求（论文的研究要求）：
+       - 详细说明研究方法和技术路线
+       - 提出具体的技术指标和参数要求
+       - 规定实验或调研的具体要求
+       - 明确数据处理和分析方法
+       - 提出创新性要求和技术突破点
+       - 说明研究的可验证性
+       - 规定研究结果的评价标准
+
+    4. 毕业设计（论文）应完成的具体工作：
+       A. 基本要求（通用部分）：
+          1. 文献综述和开题报告：
+             - 开题报告成绩要求70分以上合格
+             - 文献综述字数2500字左右
+             - 开题报告需包含研究计划和预期目标
+          2. 外文翻译：
+             - 翻译一篇与选题相关的英文文献
+             - 字数要求20000英文印刷字符以上
+             - 翻译质量要准确、通顺
+          3. 调研工作：
+             - 进行实地调研或实验研究
+             - 调研报告字数3000字左右
+             - 需包含数据分析和结果讨论
+          4. 论文撰写：
+             - 论文总字数1.5~2万字
+             - 符合学校论文格式规范
+             - 完成导师要求的修改
+          5. 论文答辩：
+             - 准备答辩PPT和讲稿
+             - 参加答辩并回答问题
+             - 总分60分以上为通过
+
+       B. 研究工作（根据论文题目"{title}"和专业"{major}"生成具体内容）：
+          1. 理论研究部分：
+             - 系统梳理本研究领域的理论基础
+             - 构建适合研究问题的理论框架
+             - 提出研究假设或理论模型
+             - 确定关键变量和影响因素
+          2. 研究方法部分：
+             - 设计详细的研究方案
+             - 确定研究方法和技术路线
+             - 制定数据收集和分析计划
+             - 建立评估指标体系
+          3. 实验/调研部分：
+             - 开展实验或调研工作
+             - 收集和整理原始数据
+             - 进行数据预处理和分析
+             - 验证研究假设
+          4. 创新工作部分：
+             - 提出创新性的解决方案
+             - 设计和实施对比实验
+             - 总结研究的创新点
+             - 验证创新成果的有效性
+          5. 应用研究部分：
+             - 选择典型案例进行分析
+             - 进行实践应用验证
+             - 评估应用效果
+             - 总结实践价值和推广意义
+
+    5. 资料文献要求及主要的参考文献：
+       - 文献数量要求：
+         * 外文文献不少于4篇
+         * 中文文献不少于16篇
+         * 核心期刊文献占比不低于50%
+       - 文献时效性要求：
+         * 近五年文献占比不少于50%
+         * 需包含最新研究进展
+       - 文献搜索途径：
+         * 外文数据库：Web of Science、Scopus、IEEE Xplore等
+         * 中文数据库：CNKI、万方、维普等
+         * 学术搜索引擎：Google Scholar、百度学术等
+       - 文献类型要求：
+         * 以学术期刊论文为主
+         * 必须包含核心期刊文献
+         * 可包含高水平会议论文
+         * 可包含优秀博硕士论文
+       - 文献引用规范：
+         * 遵守学术规范
+         * 注意避免过度引用
+         * 引用格式符合要求
+       - 建议关键词：根据论文主题提供5-8个核心关键词
+       - 推荐经典文献：列出3-5篇该领域的经典或高被引文献
+
+    请确保生成的内容：
+    1. 专业性：使用专业术语和表达方式
+    2. 针对性：内容与论文题目和专业紧密相关
+    3. 可操作性：要求具体明确，便于执行
+    4. 完整性：覆盖论文写作的各个环节
+    5. 规范性：符合学术规范和学校要求
+    6. 总字数：控制在1000字左右
+
+    请生成一个JSON格式的输出，每个部分作为一个单独的字段。对于每个字段，如果内容包含多个要点，请使用数组格式，每个要点作为数组的一个元素。
+
+    输出的JSON格式示例：
     {{
         "task_content": [
-            "1. 第一个任务内容要点",
-            "2. 第二个任务内容要点",
-            "3. 第三个任务内容要点"
+            "1. 研究背景：...(详细阐述选题背景和意义，不少于100字)",
+            "2. 研究目标：...(明确具体的研究目标)",
+            "3. 创新点：...(说明研究的创新之处)",
+            "4. 研究重点和难点：...(指出关键问题)",
+            "5. 理论和实践意义：...(阐述研究价值)",
+            "6. 可行性分析：...(说明研究的可行性)"
         ],
         "original_conditions": [
-            "1. 第一个原始条件",
-            "2. 第二个原始条件"
+            "1. 基础知识要求：...(列出必备知识)",
+            "2. 环境和工具要求：...(说明所需环境)",
+            "3. 数据要求：...(明确数据来源)",
+            "4. 质量标准：...(规定质量要求)",
+            "5. 规范要求：...(说明需遵循的规范)",
+            "6. 学术规范：...(强调学术道德)"
         ],
         "technical_requirements": [
-            "1. 第一个技术要求",
-            "2. 第二个技术要求",
-            "3. 第三个技术要求"
+            "1. 研究方法：...(详述研究方法)",
+            "2. 技术指标：...(列出具体指标)",
+            "3. 实验要求：...(说明实验规范)",
+            "4. 数据分析方法：...(规定分析方法)",
+            "5. 创新性要求：...(提出创新要求)",
+            "6. 可验证性：...(说明验证方法)",
+            "7. 评价标准：...(规定评价标准)"
         ],
         "specific_work": [
-            "1. 第一项具体工作",
-            "2. 第二项具体工作"
+            "A. 基本要求（通用部分）：",
+            "1. 文献综述和开题报告：",
+            "   - 开题报告成绩要求70分以上合格",
+            "   - 文献综述字数2500字左右",
+            "   - 开题报告需包含研究计划和预期目标",
+            "2. 外文翻译：",
+            "   - 翻译一篇与选题相关的英文文献",
+            "   - 字数要求20000英文印刷字符以上",
+            "   - 翻译质量要准确、通顺",
+            "3. 调研工作：",
+            "   - 进行实地调研或实验研究",
+            "   - 调研报告字数3000字左右",
+            "   - 需包含数据分析和结果讨论",
+            "4. 论文撰写：",
+            "   - 论文总字数1.5~2万字",
+            "   - 符合学校论文格式规范",
+            "   - 完成导师要求的修改",
+            "5. 论文答辩：",
+            "   - 准备答辩PPT和讲稿",
+            "   - 参加答辩并回答问题",
+            "   - 总分60分以上为通过",
+            "",
+            "B. 研究工作（具体内容）：",
+            "1. 理论研究：[根据论文题目生成具体的理论研究任务]",
+            "2. 研究方法：[根据论文题目生成具体的研究方法]",
+            "3. 实验/调研：[根据论文题目生成具体的实验或调研任务]",
+            "4. 创新工作：[根据论文题目生成具体的创新任务]",
+            "5. 应用研究：[根据论文题目生成具体的应用研究任务]"
         ],
         "reference_requirements": [
-            "1. 第一个参考文献要求",
-            "2. 第二个参考文献要求",
-            "3. 主要参考文献列表"
-        ],
-        "schedule": [
-            "第一阶段（1-3周）：确定研究主题，完成文献综述",
-            "第二阶段（4-8周）：设计研究方法，开始数据收集",
-            "第三阶段（9-13周）：完成数据分析，形成初步结果",
-            "第四阶段（14-{total_weeks}周）：撰写论文，修改完善，准备答辩"
+            "1. 文献数量和类型要求：",
+            "   - 外文文献不少于4篇",
+            "   - 中文文献不少于16篇",
+            "   - 核心期刊文献占比不低于50%",
+            "2. 文献时效性要求：",
+            "   - 近五年文献占比不少于50%",
+            "   - 需包含最新研究进展",
+            "3. 文献搜索途径：",
+            "   - 外文数据库：Web of Science、Scopus、IEEE Xplore等",
+            "   - 中文数据库：CNKI、万方、维普等",
+            "   - 学术搜索引擎：Google Scholar、百度学术等",
+            "4. 文献引用规范：",
+            "   - 遵守学术规范",
+            "   - 注意避免过度引用",
+            "   - 引用格式符合要求",
+            "5. 建议关键词：[与论文主题相关的5-8个关键词]",
+            "6. 推荐经典文献：[3-5篇该领域的经典或高被引文献]"
         ]
     }}
     """
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": "请生成毕业论文任务书描述。"}
+        {"role": "user", "content": "请根据给定的论文题目和专业生成一个JSON格式的任务书描述。"}
     ]
 
     response = client.chat.completions.create(
@@ -249,6 +419,13 @@ def main():
     teacher_name = st.text_input("指导教师")
     major = st.text_input("专业")
     college = st.text_input("学院", value="经济与管理学院")
+
+    # 添加额外信息输入框
+    additional_info = st.text_area(
+        "补充信息（可选）",
+        help="请输入一些重要的补充信息，如研究方向的具体要求、特殊的技术路线、导师的具体要求等。这些信息将用于生成更准确的任务书内容。",
+        height=100
+    )
 
     col1, col2 = st.columns(2)
     with col1:
@@ -281,7 +458,7 @@ def main():
         
         if st.button("生成任务书内容"):
             with st.spinner("正在生成任务书内容..."):
-                task_content = generate_task_description(title, major, start_date, end_date)
+                task_content = generate_task_description(title, major, start_date, end_date, additional_info)
             
             # 更新 session_state 中的 task_parts
             st.session_state.task_parts = task_content
@@ -292,8 +469,7 @@ def main():
             ("original_conditions", "原始条件及要求"),
             ("technical_requirements", "设计的技术要求"),
             ("specific_work", "应完成的具体工作"),
-            ("reference_requirements", "资料文献要求"),
-            ("schedule", "进度安排")
+            ("reference_requirements", "资料文献要求")
         ]):
             content = st.session_state.task_parts.get(key, [])
             if isinstance(content, list):
@@ -367,7 +543,7 @@ def main():
             task_description = "\n".join(["\n".join(st.session_state.task_parts[key]) for key in st.session_state.task_parts])
             
             # 生成咨询记录、工作总结和中期检查评价
-            consultations, work_summary, mid_term_review = generate_consultations(task_description, start_date, end_date, title, student_name)
+            consultations, work_summary, mid_term_review = generate_consultations(task_description, start_date, end_date, title, student_name, additional_info)
 
             if st.button("生成咨询记录"):
                 # 加载签名图片
