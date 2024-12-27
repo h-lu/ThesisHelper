@@ -38,9 +38,9 @@ def extract_signatures(zip_file):
     return temp_dir
 
 def process_excel_file(excel_file):
-    """读取并处理CSV文件"""
+    """读取并处理Excel文件"""
     try:
-        df = pd.read_csv(excel_file)
+        df = pd.read_excel(excel_file)
         required_columns = [
             "论文题目", "学生姓名", "学生学号", "指导教师", 
             "专业", "学院", "开始日期", "结束日期", "补充信息"
@@ -54,12 +54,12 @@ def process_excel_file(excel_file):
                 df["补充信息"] = ""
                 missing_columns.remove("补充信息")
             if missing_columns:  # 如果还有其他缺失列
-                st.error(f"CSV文件缺少以下列：{', '.join(missing_columns)}")
+                st.error(f"Excel文件缺少以下列：{', '.join(missing_columns)}")
                 return None
             
         return df
     except Exception as e:
-        st.error(f"处理CSV文件时出错：{str(e)}")
+        st.error(f"处理Excel文件时出错：{str(e)}")
         return None
 
 def generate_documents_for_student(row, teacher_signature_file, dean_signature_file, signatures_dir=None):
@@ -159,7 +159,7 @@ def generate_documents_for_student(row, teacher_signature_file, dean_signature_f
             'title': row["论文题目"],
             'student_name': row["学生姓名"],
             'student_id': row["学生学号"],
-            'teacher_name': row["指导教师"],
+            'teacher_name': row["指导���师"],
             'teacher_signature': teacher_signature,
             'major': row["专业"],
             'college': row["学院"],
@@ -185,12 +185,30 @@ def generate_documents_for_student(row, teacher_signature_file, dean_signature_f
         st.exception(e)  # 显示详细的错误信息
         return None, None
 
-def get_csv_download_link():
-    """生成CSV模板文件的下载链接"""
-    with open("template.csv", "r", encoding='utf-8') as f:
-        csv_content = f.read()
-    b64 = base64.b64encode(csv_content.encode()).decode()
-    href = f'<a href="data:text/csv;base64,{b64}" download="template.csv">模板文件</a>'
+def get_excel_download_link():
+    """生成Excel模板文件的下载链接"""
+    df = pd.DataFrame({
+        "论文题目": ["基于深度学习的图像识别系统设计与实现", "基于区块链的供应链金融系统研究"],
+        "学生姓名": ["张三", "王五"],
+        "学生学号": ["2020001", "2020002"],
+        "指导教师": ["李四", "赵六"],
+        "专业": ["计算机科学与技术", "信息管理"],
+        "学院": ["经济与管理学院", "经济与管理学院"],
+        "开始日期": ["2024-03-01", "2024-03-01"],
+        "结束日期": ["2024-06-01", "2024-06-01"],
+        "补充信息": ["使用 YOLOv8 作为基础模型，重点关注模型轻量化和精度优化", 
+                  "采用 Hyperledger Fabric 平台，实现智能合约的设计与部署"]
+    })
+    
+    # 将DataFrame保存为Excel文件到内存中
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+    output.seek(0)
+    
+    # 转换为base64编码
+    b64 = base64.b64encode(output.getvalue()).decode()
+    href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="template.xlsx">模板文件</a>'
     return href
 
 def main():
@@ -201,9 +219,9 @@ def main():
         st.markdown("""
         ### 准备工作
         
-        1. **准备CSV文件**
+        1. **准备Excel文件**
            - 下载""")
-        st.markdown(get_csv_download_link(), unsafe_allow_html=True)
+        st.markdown(get_excel_download_link(), unsafe_allow_html=True)
         st.markdown("""
            - 按模板格式填写学生信息
            - 必须包含以下列：论文题目、学生姓名、学生学号、指导教师、专业、学院、开始日期、结束日期
@@ -214,13 +232,13 @@ def main():
            - 系主任签名：单个图片文件（必需，支持jpg、jpeg、png格式）
            - 学生签名（可选）：
              * 每个学生一个签名图片文件
-             * 文件名必须与CSV中的"学生姓名"完全一致（如：张三.jpg）
+             * 文件名必须与Excel中的"学生姓名"完全一致（如：张三.jpg）
              * 支持jpg、jpeg、png格式
              * 将所有学生签名图片打包成一个ZIP文件
         
         ### 使用步骤
         
-        1. 上传CSV文件
+        1. 上传Excel文件
         2. 上传教师签字图片（必需）
         3. 上传系主任签字图片（必需）
         4. 上传包含所有学生签名ZIP文件（可选）
@@ -243,7 +261,7 @@ def main():
         """)
     
     # 上传文件
-    excel_file = st.file_uploader("上传学生信息CSV文件", type=["csv"])
+    excel_file = st.file_uploader("上传学生信息Excel文件", type=["xlsx", "xls"])
     teacher_signature_file = st.file_uploader("上传教师签名图片（必需）", type=["png", "jpg", "jpeg"])
     dean_signature_file = st.file_uploader("上传系主任签名图片（必需）", type=["png", "jpg", "jpeg"])
     signatures_zip = st.file_uploader("上传学生签名ZIP文件（可选）", type="zip")
