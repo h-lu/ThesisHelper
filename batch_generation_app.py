@@ -159,7 +159,7 @@ def generate_documents_for_student(row, teacher_signature_file, dean_signature_f
             'title': row["论文题目"],
             'student_name': row["学生姓名"],
             'student_id': row["学生学号"],
-            'teacher_name': row["指导���师"],
+            'teacher_name': row["指导老师"],
             'teacher_signature': teacher_signature,
             'major': row["专业"],
             'college': row["学院"],
