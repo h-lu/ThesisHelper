@@ -13,6 +13,7 @@ client = OpenAI(
     base_url="https://api.deepseek.com",
 )
 
+
 # 定义每次咨询的关键字
 consultation_keywords = [
     {"student": "选题讨论", "teacher": "方向建议"},
